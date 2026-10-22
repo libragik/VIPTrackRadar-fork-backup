@@ -15,7 +15,7 @@
         script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
         style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net;
         img-src 'self' data: blob: https: ;
-        connect-src 'self' blob: https://api.adsb.one https://api.adsb.lol https://api.airplanes.live https://opendata.adsb.fi https://api.adsbdb.com https://hexdb.io https://airport-data.com https://aviationweather.gov https://tfr.faa.gov https://tfr2go.com https://nowcoast.noaa.gov https://en.wikipedia.org https://raw.githubusercontent.com https://davidmegginson.github.io https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://tiles.stadiamaps.com https://corsproxy.io https://api.allorigins.win https://api.rainviewer.com https://*.rainviewer.com https://auth.opensky-network.org https://opensky-network.org https://services6.arcgis.com https://hub.arcgis.com;
+        connect-src 'self' blob: https://viptrackradar-relay.kingpirpir.workers.dev https://api.adsb.one https://api.adsb.lol https://api.airplanes.live https://opendata.adsb.fi https://api.adsbdb.com https://hexdb.io https://airport-data.com https://aviationweather.gov https://tfr.faa.gov https://tfr2go.com https://nowcoast.noaa.gov https://en.wikipedia.org https://raw.githubusercontent.com https://davidmegginson.github.io https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://basemaps.cartocdn.com https://*.basemaps.cartocdn.com https://tiles.stadiamaps.com https://corsproxy.io https://api.allorigins.win https://api.rainviewer.com https://*.rainviewer.com https://auth.opensky-network.org https://opensky-network.org https://services6.arcgis.com https://hub.arcgis.com;
         worker-src 'self' blob: https://cdn.jsdelivr.net;
         frame-src 'self';
         manifest-src 'self' blob:;
@@ -2705,6 +2705,7 @@ if ('serviceWorker' in navigator && SW_CONTEXT_SUPPORTED) {
         // two are a last resort, ordered by what still answers. The former codetabs
         // relay was removed: it no longer answers and only burned the timeout.
         publicRelays: [
+            { id: 'primary', build: url => 'https://viptrackradar-relay.kingpirpir.workers.dev/?url=' + encodeURIComponent(url) },
             { id: 'allorigins', build: url => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url) },
             { id: 'corsproxy', build: url => 'https://corsproxy.io/?url=' + encodeURIComponent(url) }
         ],
