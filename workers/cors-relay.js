@@ -102,6 +102,10 @@ export default {
             return deny(502, 'Upstream fetch failed: ' + String(error?.message || error), cors);
         }
 
+        if (upstream.status === 401 || upstream.status === 403) {
+            return deny(502, 'Upstream target returned HTTP ' + upstream.status, cors);
+        }
+
         const headers = new Headers(cors.headers);
         const contentType = upstream.headers.get('Content-Type');
         if (contentType) headers.set('Content-Type', contentType);
