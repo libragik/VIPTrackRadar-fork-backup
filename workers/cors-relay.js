@@ -1,32 +1,3 @@
-/*
- * VIPTrack CORS relay — deploy this yourself, don't depend on a public one.
- *
- * Every public ADS-B aggregator stopped sending Access-Control-Allow-Origin, so a
- * static browser-only build cannot read a feed directly. The public relays that
- * filled that gap have since closed: corsproxy.io answers 401 without an account
- * key (and its free tier is 10,000 requests/month, which this app's ~20 requests a
- * minute exhausts in under nine hours), and api.allorigins.win has had no commit
- * since 2023-01-11 and returns HTTP 522 under load.
- *
- * A Cloudflare Worker on the free plan allows 100,000 requests/day. Deploy:
- *
- *     npx wrangler deploy workers/cors-relay.js --name viptrack-relay --compatibility-date 2026-01-01
- *
- * then paste the resulting https://viptrack-relay.<subdomain>.workers.dev URL into
- * Settings > Data Relay. The host must also be added to `connect-src` in index.html
- * and _headers, exactly like the webhook, overlay and receiver hosts — the page's
- * own CSP refuses anything it has not been told about.
- *
- * Optional binding: ALLOWED_ORIGINS, a comma-separated list of page origins allowed
- * to use the relay. Leave it unset while testing; set it once deployed so the relay
- * is not a free open proxy for anyone who finds the URL.
- *
- * Usage: GET /?url=<percent-encoded absolute https URL>
- */
-
-// Targets this relay will fetch. Deliberately narrow: an open relay is an abuse
-// liability, and every host here is one the VIPTrack page already declares in its
-// own connect-src. tools/test_viptrack.py fails the build if the two drift apart.
 export const ALLOWED_TARGET_HOSTS = [
     'api.adsb.one',
     'api.adsb.lol',
@@ -42,8 +13,6 @@ export const ALLOWED_TARGET_HOSTS = [
 
 const MAX_TARGET_URL_LENGTH = 2048;
 
-// Mirrors egressPolicy._isPrivateHost in index.html. A relay that will fetch a
-// private address on request is an SSRF pivot into whatever network runs it.
 function isPrivateHost(hostname) {
     const host = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '');
     if (!host) return true;
@@ -62,8 +31,6 @@ function isPrivateHost(hostname) {
     return host === '::1' || host.startsWith('fc') || host.startsWith('fd') || host.startsWith('fe80:');
 }
 
-// Exported so the repository's contract suite can exercise the decision directly
-// rather than asserting that a guard appears in the source text.
 export function isAllowedTarget(value) {
     const raw = String(value || '').trim();
     if (!raw || raw.length > MAX_TARGET_URL_LENGTH) return false;
@@ -86,8 +53,6 @@ function allowedOrigins(env) {
 function corsHeaders(request, env) {
     const configured = allowedOrigins(env);
     const origin = request.headers.get('Origin') || '';
-    // With no ALLOWED_ORIGINS binding the relay stays open to any page, which is
-    // fine for a personal deployment and wrong for a shared one.
     const allow = configured.length === 0 ? '*' : (configured.includes(origin) ? origin : '');
     const headers = {
         'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
@@ -127,11 +92,14 @@ export default {
         try {
             upstream = await fetch(target, {
                 method: request.method,
-                headers: { 'Accept': request.headers.get('Accept') || '*/*' },
+                headers: {
+                    'Accept': request.headers.get('Accept') || 'application/json, */*',
+                    'User-Agent': 'VIPTrackRadar/0.8.2 (https://github.com/libragik/VIPTrackRadar; contact: kingpirpir@gmail.com)'
+                },
                 redirect: 'follow'
             });
         } catch (error) {
-            return deny(502, 'Upstream fetch failed', cors);
+            return deny(502, 'Upstream fetch failed: ' + String(error?.message || error), cors);
         }
 
         const headers = new Headers(cors.headers);
